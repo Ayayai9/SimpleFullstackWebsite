@@ -2,6 +2,7 @@ import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import UserList from "../components/UserList";
+import { UserProvider } from "../context/UserContext";
 
 // Mock the userApi module
 jest.mock("../services/api", () => ({
@@ -18,6 +19,11 @@ const mockUsers = [
     { id: 2, firstName: "Bob", lastName: "Jones", email: "bob@example.com", age: 30 },
 ];
 
+// Helper to render with UserProvider
+function renderWithProvider(ui: React.ReactElement) {
+    return render(<UserProvider>{ui}</UserProvider>);
+}
+
 describe("UserList", () => {
     beforeEach(() => {
         jest.clearAllMocks();
@@ -27,7 +33,7 @@ describe("UserList", () => {
         const { userApi } = require("../services/api");
         userApi.getAllUsers.mockResolvedValueOnce(mockUsers);
 
-        render(<UserList />);
+        renderWithProvider(<UserList />);
         expect(screen.getByText(/loading/i)).toBeInTheDocument();
 
         // Wait for users to be rendered
@@ -41,7 +47,7 @@ describe("UserList", () => {
         const { userApi } = require("../services/api");
         userApi.getAllUsers.mockRejectedValueOnce(new Error("API error"));
 
-        render(<UserList />);
+        renderWithProvider(<UserList />);
         await waitFor(() => {
             expect(screen.getByText(/failed to fetch users/i)).toBeInTheDocument();
         });
@@ -55,7 +61,7 @@ describe("UserList", () => {
             { id: 3, firstName: "Charlie", lastName: "Brown", email: "charlie@example.com", age: 22 },
         ]); // After creation
 
-        render(<UserList />);
+        renderWithProvider(<UserList />);
         await waitFor(() => expect(screen.queryByText(/loading/i)).not.toBeInTheDocument());
 
         fireEvent.change(screen.getByPlaceholderText(/first name/i), { target: { value: "Charlie" } });
@@ -76,7 +82,7 @@ describe("UserList", () => {
         userApi.getAllUsers.mockResolvedValueOnce([]);
         userApi.createUser.mockRejectedValueOnce(new Error("API error"));
 
-        render(<UserList />);
+        renderWithProvider(<UserList />);
         await waitFor(() => expect(screen.queryByText(/loading/i)).not.toBeInTheDocument());
 
         fireEvent.change(screen.getByPlaceholderText(/first name/i), { target: { value: "Test" } });

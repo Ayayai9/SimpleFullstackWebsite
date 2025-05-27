@@ -1,67 +1,52 @@
-import { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { userApi, User } from "../services/api";
-import React from "react";
+import Spinner from "./Spinner";
+import { useUserContext } from "../context/UserContext";
 
 export default function UserList() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { users, loading, error, refreshUsers } = useUserContext();
+
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
   const [editUser, setEditUser] = useState<Partial<User>>({});
-
   const [newUser, setNewUser] = useState({
     firstName: "",
     lastName: "",
     email: "",
     age: 0,
   });
+  const [createError, setCreateError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
-    try {
-      const data = await userApi.getAllUsers();
-      setUsers(data);
-      setError(null);
-    } catch (err) {
-      setError("Failed to fetch users");
-    } finally {
-      setLoading(false);
-    }
-  };
   const handleCreateUser = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setCreateError(null);
     try {
       await userApi.createUser(newUser);
       setNewUser({ firstName: "", lastName: "", email: "", age: 0 });
-      fetchUsers();
-    } catch (err) {
-      setError("Failed to create user");
+      await refreshUsers();
+    } catch {
+      setCreateError("Failed to create user");
     }
   };
 
   const handleDeleteUser = async (id: number) => {
     try {
       await userApi.deleteUser(id);
-      fetchUsers();
-    } catch (err) {
-      setError("Failed to delete user");
+      await refreshUsers();
+    } catch {
+      // Optionally handle error locally if needed
     }
   };
 
   const handleUpdateUser = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!editingUserId) return;
-
     try {
       await userApi.updateUser(editingUserId, editUser);
       setEditingUserId(null);
       setEditUser({});
-      fetchUsers();
-    } catch (err) {
-      setError("Failed to update user");
+      await refreshUsers();
+    } catch {
+      // Optionally handle error locally if needed
     }
   };
 
@@ -75,7 +60,7 @@ export default function UserList() {
     });
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <Spinner />;
   if (error) return <div className="text-red-500">{error}</div>;
 
   return (
@@ -85,6 +70,11 @@ export default function UserList() {
       {/* Create User Form */}
       <form onSubmit={handleCreateUser} className="mb-8 p-4 border rounded">
         <h2 className="text-xl font-semibold mb-4">Create New User</h2>
+        {createError && (
+          <div className="text-red-500 mb-2" role="alert">
+            {createError}
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-4">
           <input
             type="text"
