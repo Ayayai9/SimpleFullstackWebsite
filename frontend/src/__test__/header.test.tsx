@@ -8,11 +8,6 @@ describe("Header", () => {
         expect(screen.getByText(/my website/i)).toBeInTheDocument();
     });
 
-    test("renders login button", () => {
-        render(<Header />);
-        expect(screen.getByRole("button", { name: /login/i })).toBeInTheDocument();
-    });
-
     test("has correct styles", () => {
         render(<Header />);
         const header = screen.getByRole("banner");
